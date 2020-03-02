@@ -4,46 +4,64 @@
 #
 Name     : ntplib
 Version  : 0.3.3
-Release  : 6
+Release  : 7
 URL      : https://files.pythonhosted.org/packages/29/8b/85a86e01c510665b0790d3a9fd4532ad98aba9e185a676113a0ae3879350/ntplib-0.3.3.tar.gz
 Source0  : https://files.pythonhosted.org/packages/29/8b/85a86e01c510665b0790d3a9fd4532ad98aba9e185a676113a0ae3879350/ntplib-0.3.3.tar.gz
 Summary  : Python NTP library
 Group    : Development/Tools
 License  : MIT
-Requires: ntplib-python3
-Requires: ntplib-python
+Requires: ntplib-python = %{version}-%{release}
+Requires: ntplib-python3 = %{version}-%{release}
 BuildRequires : buildreq-distutils3
 
 %description
 ntplib - Python NTP library
-        ===========================
-        
-        Description
-        -----------
-        
-        This module offers a simple interface to query NTP servers from Python.
-        
-        It also provides utility functions to translate NTP fields values to text (mode,
-        leap indicator...). Since it's pure Python, and only depends on core modules, it
-        should work on any platform with a Python implementation.
-        
-        Example
-        -------
-        
-        >>> import ntplib
-        >>> from time import ctime
-        >>> c = ntplib.NTPClient()
-        >>> response = c.request('europe.pool.ntp.org', version=3)
-        >>> response.offset
-        -0.143156766891
-        >>> response.version
-        3
-        >>> ctime(response.tx_time)
+===========================
+
+Description
+-----------
+
+This module offers a simple interface to query NTP servers from Python.
+
+It also provides utility functions to translate NTP fields values to text (mode,
+leap indicator...). Since it's pure Python, and only depends on core modules, it
+should work on any platform with a Python implementation.
+
+Example
+-------
+
+>>> import ntplib
+>>> from time import ctime
+>>> c = ntplib.NTPClient()
+>>> response = c.request('europe.pool.ntp.org', version=3)
+>>> response.offset
+-0.143156766891
+>>> response.version
+3
+>>> ctime(response.tx_time)
+'Sun May 17 09:32:48 2009'
+>>> ntplib.leap_to_text(response.leap)
+'no warning'
+>>> response.root_delay
+0.0046844482421875
+>>> ntplib.ref_id_to_text(response.ref_id)
+193.190.230.66
+
+
+Installation
+------------
+
+As root::
+
+   # python setup.py install
+
+or just copy ntplib.py inside a directory in your sys.path, e.g.
+`/usr/lib/python2.5/`.
 
 %package python
 Summary: python components for the ntplib package.
 Group: Default
-Requires: ntplib-python3
+Requires: ntplib-python3 = %{version}-%{release}
 
 %description python
 python components for the ntplib package.
@@ -53,6 +71,7 @@ python components for the ntplib package.
 Summary: python3 components for the ntplib package.
 Group: Default
 Requires: python3-core
+Provides: pypi(ntplib)
 
 %description python3
 python3 components for the ntplib package.
@@ -60,18 +79,27 @@ python3 components for the ntplib package.
 
 %prep
 %setup -q -n ntplib-0.3.3
+cd %{_builddir}/ntplib-0.3.3
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
-export LANG=C
-export SOURCE_DATE_EPOCH=1536442259
-python3 setup.py build -b py3
+export LANG=C.UTF-8
+export SOURCE_DATE_EPOCH=1583187609
+# -Werror is for werrorists
+export GCC_IGNORE_WERROR=1
+export CFLAGS="$CFLAGS -fno-lto "
+export FCFLAGS="$CFLAGS -fno-lto "
+export FFLAGS="$CFLAGS -fno-lto "
+export CXXFLAGS="$CXXFLAGS -fno-lto "
+export MAKEFLAGS=%{?_smp_mflags}
+python3 setup.py build
 
 %install
+export MAKEFLAGS=%{?_smp_mflags}
 rm -rf %{buildroot}
-python3 -tt setup.py build -b py3 install --root=%{buildroot}
+python3 -tt setup.py build  install --root=%{buildroot}
 echo ----[ mark ]----
 cat %{buildroot}/usr/lib/python3*/site-packages/*/requires.txt || :
 echo ----[ mark ]----
